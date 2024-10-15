@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  email     String    @unique
+  password  String
+  name      String
+  adult     Boolean   @default(false)
+  picture   String    @default("https://cdn-icons-png.flaticon.com/512/9187/9187604.png")
+  thumbnail String    @default("https://img.freepik.com/premium-vector/vector-realistic-blue-sky-with-clouds-soft-transparent-clouds-clear-sunny-summer-spring-day_390775-99.jpg")
+  books     Book[]    @relation("UserBooks")
+  comments  Comment[] // Relation to Comment model
+  likes     Like[]    // Relation to Like model
+}
+
+model Category {
+  id    String   @id @default(auto()) @map("_id") @db.ObjectId
+  title String
+  bookIds String[] @db.ObjectId
+  books   Book[]   @relation(fields: [bookIds], references: [id])
+}
+
+model Book {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String
+  categoryIDs String[]   @db.ObjectId
+  categories  Category[] @relation(fields: [categoryIDs], references: [id])
+  thumbnail   String
+  creatorId   String       @db.ObjectId
+  creator     User         @relation("UserBooks", fields: [creatorId], references: [id])
+  chapters    Chapter[]    @relation("BookChapters")
+  comments    Comment[]    @relation("BookComments")
+  likes       Like[]
+}
+
+model Like {
+  id      String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId  String   @db.ObjectId
+  bookId  String   @db.ObjectId
+  user    User     @relation(fields: [userId], references: [id])  // Relation to User
+  book    Book     @relation(fields: [bookId], references: [id])  // Relation to Book
+
+  @@unique([userId, bookId])  // Ensure that a user can like a book only once
+}
+
+
+model Chapter {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  title     String
+  createdAt DateTime @default(now())
+  content   String
+  bookId    String   @db.ObjectId
+  book      Book     @relation("BookChapters", fields: [bookId], references: [id]) // Relation to Book
+}
+
+model Comment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  content   String
+  createdAt DateTime @default(now())
+  bookId    String   @db.ObjectId
+  userId    String   @db.ObjectId
+  book      Book     @relation("BookComments", fields: [bookId], references: [id]) // Relation to Book
+  user      User     @relation(fields: [userId], references: [id]) // Relation to User
+}
